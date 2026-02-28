@@ -11,10 +11,11 @@ export interface VideoItem {
   isInPlaylist: boolean
 }
 
-export type SortField = 'name' | 'duration' | 'date'
+export type SortField = 'name' | 'duration' | 'date' | 'custom'
 export type SortDirection = 'asc' | 'desc'
 
 const STORAGE_KEY = 'trimmer_videos'
+const ORDER_STORAGE_KEY = 'trimmer_playlist_order'
 
 export const useVideoStore = defineStore('video', () => {
   const videos = ref<VideoItem[]>([])
@@ -24,8 +25,11 @@ export const useVideoStore = defineStore('video', () => {
   const isProcessing = ref<boolean>(false)
   const status = ref<string>('Ready')
   const progress = ref<number>(0)
-  const sortField = ref<SortField>('date')
-  const sortDirection = ref<SortDirection>('desc')
+  const sortField = ref<SortField>('custom')
+  const sortDirection = ref<SortDirection>('asc')
+  const playlistOrder = ref<string[]>([])
+  const isPlaylistPlaying = ref<boolean>(false)
+  const playlistIndex = ref<number>(0)
 
   const selectedVideo = computed(() => {
     return videos.value.find(v => v.id === selectedVideoId.value) || null
@@ -37,6 +41,16 @@ export const useVideoStore = defineStore('video', () => {
 
   const sortedPlaylist = computed(() => {
     const playlistVideos = [...playlist.value]
+    
+    if (sortField.value === 'custom') {
+      return playlistVideos.sort((a, b) => {
+        const indexA = playlistOrder.value.indexOf(a.id)
+        const indexB = playlistOrder.value.indexOf(b.id)
+        const orderA = indexA === -1 ? Infinity : indexA
+        const orderB = indexB === -1 ? Infinity : indexB
+        return orderA - orderB
+      })
+    }
     
     playlistVideos.sort((a, b) => {
       let comparison = 0
@@ -77,6 +91,16 @@ export const useVideoStore = defineStore('video', () => {
           selectVideo(parsed[0].id)
         }
       }
+      
+      const orderStored = localStorage.getItem(ORDER_STORAGE_KEY)
+      if (orderStored) {
+        playlistOrder.value = JSON.parse(orderStored)
+      }
+      
+      if (playlistOrder.value.length === 0 && videos.value.length > 0) {
+        playlistOrder.value = videos.value.map(v => v.id)
+        saveToStorage()
+      }
     } catch (error) {
       console.error('Failed to load videos from storage:', error)
     }
@@ -85,6 +109,7 @@ export const useVideoStore = defineStore('video', () => {
   function saveToStorage() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(videos.value))
+      localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(playlistOrder.value))
     } catch (error) {
       console.error('Failed to save videos to storage:', error)
     }
@@ -101,6 +126,7 @@ export const useVideoStore = defineStore('video', () => {
       isInPlaylist: true
     }
     videos.value.push(video)
+    playlistOrder.value.push(video.id)
     if (!selectedVideoId.value) {
       selectVideo(video.id)
     }
@@ -111,6 +137,10 @@ export const useVideoStore = defineStore('video', () => {
     const index = videos.value.findIndex(v => v.id === id)
     if (index !== -1) {
       videos.value.splice(index, 1)
+      const orderIndex = playlistOrder.value.indexOf(id)
+      if (orderIndex !== -1) {
+        playlistOrder.value.splice(orderIndex, 1)
+      }
       if (selectedVideoId.value === id) {
         selectedVideoId.value = videos.value.length > 0 ? videos.value[0].id : null
       }
@@ -174,7 +204,47 @@ export const useVideoStore = defineStore('video', () => {
 
   function clearPlaylist() {
     videos.value.forEach(v => v.isInPlaylist = false)
+    playlistOrder.value = []
     saveToStorage()
+  }
+
+  function reorderPlaylist(fromIndex: number, toIndex: number) {
+    const newOrder = [...playlistOrder.value]
+    const item = newOrder.splice(fromIndex, 1)[0]
+    newOrder.splice(toIndex, 0, item)
+    playlistOrder.value = newOrder
+    sortField.value = 'custom'
+    saveToStorage()
+  }
+
+  function playPlaylist() {
+    if (sortedPlaylist.value.length === 0) return
+    isPlaylistPlaying.value = true
+    const currentIndex = sortedPlaylist.value.findIndex(v => v.id === selectedVideoId.value)
+    playlistIndex.value = currentIndex >= 0 ? currentIndex : 0
+    selectVideo(sortedPlaylist.value[playlistIndex.value].id)
+  }
+
+  function playNextInPlaylist() {
+    if (!isPlaylistPlaying.value) return
+    if (playlistIndex.value < sortedPlaylist.value.length - 1) {
+      playlistIndex.value++
+      selectVideo(sortedPlaylist.value[playlistIndex.value].id)
+    } else {
+      isPlaylistPlaying.value = false
+    }
+  }
+
+  function playPreviousInPlaylist() {
+    if (!isPlaylistPlaying.value) return
+    if (playlistIndex.value > 0) {
+      playlistIndex.value--
+      selectVideo(sortedPlaylist.value[playlistIndex.value].id)
+    }
+  }
+
+  function stopPlaylist() {
+    isPlaylistPlaying.value = false
   }
 
   async function trimVideo(): Promise<{ success: boolean; error?: string }> {
@@ -235,6 +305,9 @@ export const useVideoStore = defineStore('video', () => {
     sortedPlaylist,
     sortField,
     sortDirection,
+    playlistOrder,
+    isPlaylistPlaying,
+    playlistIndex,
     isProcessing,
     status,
     progress,
@@ -246,6 +319,11 @@ export const useVideoStore = defineStore('video', () => {
     togglePlaylistItem,
     setSort,
     clearPlaylist,
+    reorderPlaylist,
+    playPlaylist,
+    playNextInPlaylist,
+    playPreviousInPlaylist,
+    stopPlaylist,
     trimVideo,
     setStatus,
     saveToStorage

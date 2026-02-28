@@ -47,9 +47,17 @@ function handleTimeUpdate() {
   currentTime.value = videoRef.value.currentTime
   
   if (videoRef.value.currentTime >= videoStore.trimEnd) {
-    videoRef.value.currentTime = videoStore.trimStart
-    if (!isPlaying.value) {
-      videoRef.value.play()
+    if (videoStore.isPlaylistPlaying) {
+      videoStore.playNextInPlaylist()
+      if (videoStore.selectedVideo) {
+        videoRef.value.load()
+        videoRef.value.play()
+      }
+    } else {
+      videoRef.value.currentTime = videoStore.trimStart
+      if (!isPlaying.value) {
+        videoRef.value.play()
+      }
     }
   }
 }

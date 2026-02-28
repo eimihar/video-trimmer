@@ -4,6 +4,7 @@ import { useVideoStore, type SortField } from '../stores/videoStore'
 
 const videoStore = useVideoStore()
 const isDragOver = ref(false)
+const draggedId = ref<string | null>(null)
 
 function formatDuration(seconds: number): string {
   if (!seconds || seconds === 0) return '--:--'
@@ -64,6 +65,47 @@ function getSortIcon(field: SortField): string {
   if (videoStore.sortField !== field) return ''
   return videoStore.sortDirection === 'asc' ? ' ↑' : ' ↓'
 }
+
+function onDragStart(event: DragEvent, id: string) {
+  draggedId.value = id
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', id)
+  }
+}
+
+function onDragOver(event: DragEvent, targetId: string) {
+  event.preventDefault()
+  if (!draggedId.value || draggedId.value === targetId) return
+  
+  const fromIndex = videoStore.playlistOrder.indexOf(draggedId.value)
+  const toIndex = videoStore.playlistOrder.indexOf(targetId)
+  
+  if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+    videoStore.reorderPlaylist(fromIndex, toIndex)
+    draggedId.value = targetId
+  }
+}
+
+function onDragEnd() {
+  draggedId.value = null
+}
+
+function onDrop(event: DragEvent, targetId: string) {
+  event.preventDefault()
+  if (!draggedId.value || draggedId.value === targetId) {
+    draggedId.value = null
+    return
+  }
+  
+  const fromIndex = videoStore.playlistOrder.indexOf(draggedId.value)
+  const toIndex = videoStore.playlistOrder.indexOf(targetId)
+  
+  if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+    videoStore.reorderPlaylist(fromIndex, toIndex)
+  }
+  draggedId.value = null
+}
 </script>
 
 <template>
@@ -78,6 +120,13 @@ function getSortIcon(field: SortField): string {
     <div class="px-2 py-1 bg-gray-800 flex items-center justify-between">
       <div class="flex items-center gap-1">
         <span class="text-xs text-gray-400">Sort:</span>
+        <button
+          @click="setSort('custom')"
+          class="text-xs px-1 py-0.5 rounded transition-colors"
+          :class="videoStore.sortField === 'custom' ? 'bg-accent text-white' : 'text-gray-400 hover:text-white'"
+        >
+          Custom{{ getSortIcon('custom') }}
+        </button>
         <button
           @click="setSort('name')"
           class="text-xs px-1 py-0.5 rounded transition-colors"
@@ -121,27 +170,42 @@ function getSortIcon(field: SortField): string {
       <div
         v-for="video in videoStore.sortedPlaylist"
         :key="video.id"
+        draggable="true"
+        @dragstart="onDragStart($event, video.id)"
+        @dragover="onDragOver($event, video.id)"
+        @drop="onDrop($event, video.id)"
+        @dragend="onDragEnd"
         @click="videoStore.selectVideo(video.id)"
         @contextmenu="handleContextMenu($event, video.id)"
         class="h-video-item px-3 flex items-center justify-between cursor-pointer border-b border-gray-800 transition-colors"
         :class="{
           'bg-selected': video.id === videoStore.selectedVideoId,
-          'hover:bg-hover': video.id !== videoStore.selectedVideoId
+          'hover:bg-hover': video.id !== videoStore.selectedVideoId,
+          'opacity-50': draggedId === video.id
         }"
       >
-        <span class="truncate text-sm">{{ video.name }}</span>
+        <div class="flex items-center min-w-0">
+          <span class="text-gray-500 mr-2 cursor-move text-xs">☰</span>
+          <span class="truncate text-sm">{{ video.name }}</span>
+        </div>
         <span class="text-xs text-gray-400 ml-2 flex-shrink-0">
           {{ formatTrimDuration(video) }}
         </span>
       </div>
     </div>
     
-    <div v-if="videoStore.playlist.length > 0" class="p-2 border-t border-gray-700">
+    <div v-if="videoStore.playlist.length > 0" class="p-2 border-t border-gray-700 flex gap-2">
+      <button
+        @click="videoStore.playPlaylist()"
+        class="flex-1 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+      >
+        ▶ Play All
+      </button>
       <button
         @click="videoStore.clearPlaylist()"
-        class="w-full py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+        class="py-1 px-2 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
       >
-        Clear All
+        Clear
       </button>
     </div>
   </div>

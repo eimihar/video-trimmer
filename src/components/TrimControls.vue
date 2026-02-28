@@ -40,6 +40,30 @@ async function handleTrim() {
 
 <template>
   <div class="flex flex-col gap-4">
+    <div v-if="videoStore.isPlaylistPlaying" class="flex items-center gap-2 bg-green-900/30 px-3 py-2 rounded">
+      <span class="text-green-400 text-sm">▶ Playlist Mode</span>
+      <button
+        @click="videoStore.playPreviousInPlaylist()"
+        :disabled="videoStore.playlistIndex <= 0"
+        class="px-2 py-1 bg-gray-600 text-white rounded text-xs disabled:opacity-50"
+      >
+        ◀ Prev
+      </button>
+      <button
+        @click="videoStore.stopPlaylist()"
+        class="px-2 py-1 bg-red-600 text-white rounded text-xs"
+      >
+        ■ Stop
+      </button>
+      <button
+        @click="videoStore.playNextInPlaylist()"
+        :disabled="videoStore.playlistIndex >= videoStore.sortedPlaylist.length - 1"
+        class="px-2 py-1 bg-gray-600 text-white rounded text-xs disabled:opacity-50"
+      >
+        Next ▶
+      </button>
+    </div>
+    
     <div class="flex items-center justify-between">
       <div class="text-sm">
         <span class="text-gray-400">Trim Duration: </span>

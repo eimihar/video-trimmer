@@ -58,7 +58,9 @@ function handleLoadedMetadata() {
   if (!videoRef.value || !videoStore.selectedVideo) return
   duration.value = videoRef.value.duration
   videoStore.updateVideoDuration(videoStore.selectedVideo.id, videoRef.value.duration)
-  videoStore.trimEnd = videoRef.value.duration
+  if (videoStore.trimEnd === 0) {
+    videoStore.trimEnd = videoRef.value.duration
+  }
 }
 
 function handleSeek(event: MouseEvent) {

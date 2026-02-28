@@ -1,0 +1,88 @@
+{
+  "name": "videotrimmer",
+  "version": "1.0.0",
+  "description": "Video Trimmer Desktop App",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && npm run electron:start\"",
+    "electron:start": "tsc -p electron/tsconfig.json && electron .",
+    "electron:build": "npm run build && tsc -p electron/tsconfig.json && electron-builder --dir",
+    "electron:build:portable": "npm run build && tsc -p electron/tsconfig.json && electron-builder --win portable",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "video",
+    "trimmer",
+    "electron",
+    "vue"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.29"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.28",
+    "@types/node": "^25.3.2",
+    "@vitejs/plugin-vue": "^4.6.2",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^8.2.2",
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vue-tsc": "^3.2.5",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.videotrimmer.app",
+    "productName": "VideoTrimmer",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/@ffmpeg-installer/ffmpeg",
+        "to": "ffmpeg",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
+  }
+}

@@ -30,6 +30,9 @@ function togglePlay() {
   if (isPlaying.value) {
     videoRef.value.pause()
   } else {
+    if (videoRef.value.currentTime < videoStore.trimStart || videoRef.value.currentTime >= videoStore.trimEnd) {
+      videoRef.value.currentTime = videoStore.trimStart
+    }
     videoRef.value.play()
   }
   isPlaying.value = !isPlaying.value
@@ -121,7 +124,7 @@ watch(() => videoStore.selectedVideo?.path, () => {
   if (videoRef.value) {
     videoRef.value.load()
     isPlaying.value = false
-    currentTime.value = 0
+    currentTime.value = videoStore.trimStart
   }
 })
 </script>

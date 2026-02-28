@@ -36,60 +36,10 @@ async function handleTrim() {
     trimMessage.value = `Error: ${result.error}`
   }
 }
-
-function handleStartChange(event: Event) {
-  const value = parseFloat((event.target as HTMLInputElement).value)
-  if (value < videoStore.trimEnd - 1) {
-    videoStore.setTrimRange(value, videoStore.trimEnd)
-  }
-}
-
-function handleEndChange(event: Event) {
-  const value = parseFloat((event.target as HTMLInputElement).value)
-  if (value > videoStore.trimStart + 1) {
-    videoStore.setTrimRange(videoStore.trimStart, value)
-  }
-}
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex items-center gap-4">
-      <div class="flex-1">
-        <label class="block text-xs text-gray-400 mb-1">Start Time</label>
-        <div class="flex items-center gap-2">
-          <input
-            type="range"
-            min="0"
-            :max="videoStore.selectedVideo?.duration || 100"
-            :value="videoStore.trimStart"
-            step="0.1"
-            @input="handleStartChange"
-            class="w-full"
-            :disabled="!videoStore.selectedVideo"
-          />
-          <span class="text-sm w-20 text-right">{{ formatTime(videoStore.trimStart) }}</span>
-        </div>
-      </div>
-      
-      <div class="flex-1">
-        <label class="block text-xs text-gray-400 mb-1">End Time</label>
-        <div class="flex items-center gap-2">
-          <input
-            type="range"
-            min="0"
-            :max="videoStore.selectedVideo?.duration || 100"
-            :value="videoStore.trimEnd"
-            step="0.1"
-            @input="handleEndChange"
-            class="w-full"
-            :disabled="!videoStore.selectedVideo"
-          />
-          <span class="text-sm w-20 text-right">{{ formatTime(videoStore.trimEnd) }}</span>
-        </div>
-      </div>
-    </div>
-    
     <div class="flex items-center justify-between">
       <div class="text-sm">
         <span class="text-gray-400">Trim Duration: </span>

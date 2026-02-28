@@ -1,7 +1,15 @@
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import { app } from 'electron'
+import { join } from 'path'
 
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+const isDev = process.env.NODE_ENV !== 'production' && !app.isPackaged
+
+const ffmpegPath = isDev 
+  ? ffmpegInstaller.path 
+  : join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe')
+
+ffmpeg.setFfmpegPath(ffmpegPath)
 
 export function trimVideo(
   inputPath: string,

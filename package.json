@@ -53,7 +53,7 @@
     ],
     "extraResources": [
       {
-        "from": "node_modules/@ffmpeg-installer/ffmpeg",
+        "from": "node_modules/@ffmpeg-installer/win32-x64",
         "to": "ffmpeg",
         "filter": [
           "**/*"
